@@ -28,6 +28,7 @@ build_script:
   - conteneur=$(sudo docker run --privileged -d -i -t -v /home:/home -v "$(pwd)"/aptcache:/var/cache/pbuilder/aptcache -v "$(pwd)"/resultat:/var/cache/pbuilder/result jpcima/librazik-2-automate:i386 /bin/bash)
   - sudo docker exec --privileged -w "$(pwd)" -t "$conteneur" /bin/bash -c 'echo APTCACHEHARDLINK="no" >> /etc/pbuilderrc'
   - sudo docker exec --privileged -w "$(pwd)" -t "$conteneur" /bin/bash outils/construire-paquets-commit.sh "$commit"
+  - sudo chown -R appveyor:appveyor .
 
 # artifact files to save
 artifacts:
