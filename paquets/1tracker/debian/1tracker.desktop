@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=1tracker
+Comment=An experimental chiptune multi-tracker
+Comment[fr]=Un multi-tracker expérimental chiptune
+Exec=1tracker
+Terminal=false
+Icon=1tracker
+Type=Application
+Categories=AudioVideo;Audio;
