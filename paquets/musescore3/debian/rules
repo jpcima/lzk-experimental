@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+
+ifeq (,$(findstring terse,${DEB_BUILD_OPTIONS}))
+export DH_VERBOSE=1
+export V=1
+export VERBOSE=1
+endif
+
+# defined for most of the code anyway; doing this here helps the PCH
+OUR_CPPFLAGS := -DQT_NO_DEBUG
+# avoid stray debugging output
+OUR_CPPFLAGS += -DNDEBUG
+# disable phoning home
+OUR_CPPFLAGS += -DMSCORE_NO_UPDATE_CHECKER
+
+export DEB_BUILD_MAINT_OPTIONS := hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND := -Wl,--as-needed
+export DEB_CPPFLAGS_MAINT_APPEND := ${OUR_CPPFLAGS}
+
+# better debugging if requested
+ifneq (,$(findstring optdbg,${DEB_BUILD_OPTIONS}))
+export DEB_CFLAGS_MAINT_APPEND := -Og
+export DEB_CXXFLAGS_MAINT_APPEND := -Og
+endif
+
+DEB_HOST_ARCH_OS?=$(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+
+%:
+	dh $@ --buildsystem=cmake
+
+CMAKE_DEFS:=	-DCMAKE_SKIP_RPATH=ON
+CMAKE_DEFS+=	-DDOWNLOAD_SOUNDFONT=OFF
+CMAKE_DEFS+=	-DUSE_SYSTEM_FREETYPE=ON \
+		-DFREETYPE_INCLUDE_DIRS=/usr/include/freetype2/
+CMAKE_DEFS+=	-DBUILD_WEBENGINE=OFF
+CMAKE_DEFS+=	-DOMR=ON
+CMAKE_DEFS+=	-DUSE_SYSTEM_POPPLER=ON
+CMAKE_DEFS+=	-DBUILD_CRASH_REPORTER=OFF
+
+ifneq (linux,${DEB_HOST_ARCH_OS})
+CMAKE_DEFS+=	-DBUILD_PORTMIDI=OFF
+endif
+
+CMAKE_DEFS+=	-DMSCORE_INSTALL_SUFFIX="3"
+
+override_dh_auto_configure:
+	dh_auto_configure -- ${CMAKE_DEFS}
+
+override_dh_auto_build:
+	env GNUMAKEFLAGS="$$GNUMAKEFLAGS --output-sync" \
+	    dh_auto_build -- lrelease all
+
+override_dh_auto_test:
+ifeq (,$(findstring nocheck,${DEB_BUILD_OPTIONS}))
+	mksh debian/buildtest ${DEB_BUILD_OPTIONS}
+else
+	@echo 'I: tests disabled'
+endif
+
+override_dh_install-indep:
+	# move stuff to packages
+	dh_install
+	# make system-wide soundfonts available
+	cd debian/musescore3-common/usr/share/mscore3-* && \
+	    mkdir -p sound && \
+	    ln -sf ../../sounds/sf2 ../../sounds/sf3 ../../sounds/sfz sound/

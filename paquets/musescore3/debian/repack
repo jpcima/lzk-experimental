@@ -1,0 +1,178 @@
+#!/bin/bash
+# debian/repack - Produce DFSG compliant orig.tar.xz from upstream tarball.
+#  1) Unpack upstream tarball.
+#  2) Check for DSFG compliance (no PDFs, SF3s or precompiled binaries).
+#  3) Set revision number in mscore/revision.h to match Git commit number.
+#  4) Pack into orig.tar.xz
+
+set -e # exit on error
+
+watchfile=$(dirname "$0")/watch
+if [[ ! -e $watchfile ]]; then
+  printf >&2 '%s: Error! File %s not found.\n' "$0" "$watchfile"
+  exit 1
+fi
+apipath=$(grep -o '\<https://github\.com/[!-~]*/tags\>' "$watchfile" | \
+    sed 's!github\.com!api.github.com/repos!')
+if [[ -z $apipath ]]; then
+  printf >&2 '%s: Error! github.com repository not found in %s!\n' "$0" "$watchfile"
+  exit 1
+fi
+
+function usage() {
+cat >&2 <<EOF
+debian/repack - set MuseScore revision number and check for DFSG compliance.
+
+Usage:    debian/repack  --upstream-version  VERSION  [UPSTREAM-TARBALL]
+Example:  debian/repack  --upstream-version  "2.0.1+dfsg1"
+EOF
+}
+
+if [[ $1 = --usage || $1 = --help || $1 = -[h?] ]]; then
+  usage
+  exit 0
+fi
+
+if [[ $1 != --upstream-version || -z $2 ]]; then
+  printf >&2 '%s: Error! Upstream version was not specified.\n\n' "$0"
+  usage
+  exit 1
+fi
+
+baseversion=$2
+debversion=${baseversion//'%'/'~'}
+if [[ $baseversion = *'+dfsg'* ]]; then
+  baseversion=${baseversion%+dfsg*}
+fi
+gitversion=v${baseversion//'~'/'%'}
+baseversion=${baseversion//'%'/'~'}
+
+printf >&2 'D: baseversion<%s> debversion<%s> gitversion<%s>\n' \
+  "$baseversion" "$debversion" "$gitversion"
+
+tarpath=${3:-../musescore_$2.orig.tar.gz}
+printf >&2 '%s\n' "$0: Repacking upstream tarball '$tarpath'."
+
+if [[ ! -f $tarpath ]]; then
+  printf >&2 '%s: Error! Upstream tarball not found.\n\n' "$0"
+  usage
+  exit 1
+fi
+
+tarball="$(basename "$tarpath")"
+outdir="$(dirname "$tarpath")" # send output files to input directory
+
+if [[ -n $(which realpath) ]]; then
+  outdir="$(realpath --relative-to="$PWD" "$outdir")"
+fi
+
+cd "$outdir"
+
+symlink=""
+if [[ -L $tarball ]]; then
+  # If $tarball was actually a symlink then resolve it
+  symlink="$tarball"
+  tarball="$(readlink "$symlink")"
+fi
+
+tempdir="tmp-musescore-$debversion"
+
+# 1) Unpack upstream tarball
+printf >&2 '%s\n' "Unpacking upstream tarball into '$tempdir'."
+rm -rf "$tempdir"
+mkdir "$tempdir"
+tar -xaf "$tarball" -C "$tempdir"
+cd "$tempdir"
+mv MuseScore-* "musescore-$debversion.orig"
+cd "musescore-$debversion.orig"
+
+# 2) Check for DSFG compliance (no precompiled binaries or PDFs, etc).
+cat >&2 <<EOF
+Checking for DFSG compliance. If any non compliant files are discovered then
+they will be printed on the Terminal and then this script will exit. The non-
+compliant files must be added to the Files-Excluded list within debian/copyright
+and then you will need to run 'uscan' again. See uscan(1).
+EOF
+
+dfsg_compliant="TRUE"
+
+echo >&2 "Searching for PDF, SF3 and object files..."
+pdfs=$(find . -iname \*.pdf -o -iname \*.sf3 -o -iname \*.dll -o \
+    -iname \*.o -o -iname \*.a -o -iname \*.so -o -iname \*.so.\*)
+if [[ -n $pdfs ]]; then
+  printf >&2 '%s\n' \
+   "$pdfs" \
+   "PDF, SF3 or other object files, which are not DFSG-free, were discovered." \
+   "Please add them to Files-Excluded in debian/copyright."
+  dfsg_compliant="FALSE"
+fi
+
+echo >&2 "Searching for precompiled binaries..."
+binaries="$(find . -type f -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print)"
+if [[ -n $binaries ]]; then
+  printf >&2 '%s\n' \
+   "$binaries" \
+   "Binary files were discovered. Binaries are non DFSG-free." \
+   "Please add them to Files-Excluded in debian/copyright."
+  dfsg_compliant="FALSE"
+fi
+
+if [[ $dfsg_compliant != TRUE ]]; then
+  echo >&2 "You will need to run 'uscan' again afterwards."
+  exit 1
+fi
+
+# 3) Set revision number in mscore/revision.h to match upstream Git commit
+# Note: upstream has a Makefile target "make revision" to set the revision, but
+# it only works inside a Git repo so we have to get the revision another way.
+echo >&2 "Determining upstream revision (first 7 characters of Git commit SHA)."
+
+if ! apires=$(wget -S --content-on-error -O - "$apipath"); then
+  printf >&2 '%s: Error! Could not read from GitHub API:\n%s\n' "$0" "$apires"
+  exit 1
+fi
+
+commit="$( \
+  printf '%s\n' "$apires" \
+   | tr -d '[:space:]' | sed -r 's/("name":)/\n\1/g' \
+   | grep -F "\"name\":\"$gitversion\"" \
+   | sed -nr 's/.*"sha":"([[:alnum:]]{7})[[:alnum:]]{33}".*/\1\n/p' \
+)"
+
+if [[ -z $commit ]]; then
+  printf >&2 '%s: Error! Could not get upstream commit. Data:\n%s\n' "$0" "$apires"
+  exit 1
+fi
+
+printf >&2 '%s\n' "Upstream revision is '$commit'."
+
+printf >&2 '%s\n' "Setting revision number in 'mscore/revision.h' to '$commit'."
+mtime="$(stat -c %y "mscore/revision.h")" # preserve modification time
+printf '%s\n' "$commit" >"mscore/revision.h"
+touch -d "$mtime" "mscore/revision.h"
+
+# 4) Pack into orig.tar.xz
+cd .. # now inside $tempdir
+printf >&2 '%s\n' "Creating musescore_$debversion.orig.tar; this may take a while"
+tar -cf "../musescore_$debversion.orig.tar" \
+    -Hustar -b1 \
+    --numeric-owner --owner=0 --group=0 \
+    --mode='u=rwX,go=rX' \
+    "musescore-$debversion.orig"
+cd .. # now back to output directory (outside $tempdir)
+
+# Tidy up (must do this before compressing tar incase tarball has same name)
+echo >&2 "Removing temporary files."
+rm -rf "$tempdir" "$tarball" "$symlink"
+
+# Compress new orig.tar
+printf >&2 '%s\n' "Compressing musescore_$debversion.orig.tar; this will take long"
+xz -7e "musescore_$debversion.orig.tar"
+
+cat >&2 <<EOF
+Finished!
+The upstream code is in "$outdir/musescore_$debversion.orig.tar.xz".
+Check this in with pristine-tar after committing it to the upstream branch:
+ \$ pristine-tar commit '$outdir/musescore_$debversion.orig.tar.xz' upstream
+Then tag the upstream branch and merge it into master.
+EOF

@@ -1,0 +1,16 @@
+Description: Remove excluded paths from build
+Author: mirabilos <tg@debian.org>
+Forwarded: not-needed
+Justification: Debian-specific exclusions from distfile
+
+--- a/share/CMakeLists.txt
++++ b/share/CMakeLists.txt
+@@ -17,7 +17,7 @@
+ #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ #=============================================================================
+ 
+-subdirs(templates wallpaper locale styles sound manual
++subdirs(templates wallpaper locale styles manual
+    workspaces instruments tours)
+ 
+ install (DIRECTORY

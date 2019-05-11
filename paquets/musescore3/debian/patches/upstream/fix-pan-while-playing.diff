@@ -1,0 +1,15 @@
+Author: Matt McClinch <mattmcclinch@gmail.com>
+Description: fix #288420: Can't pan score while playing when note is selected
+Origin: upstream
+
+--- a/mscore/events.cpp
++++ b/mscore/events.cpp
+@@ -521,7 +521,7 @@ void ScoreView::mouseMoveEvent(QMouseEve
+                   break;
+ 
+             case ViewState::PLAY:
+-                  if (drag && !editData.element)
++                  if (drag)
+                         dragScoreView(me);
+                   break;
+ 

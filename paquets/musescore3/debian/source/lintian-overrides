@@ -1,0 +1,6 @@
+# github doesn’t expose those
+musescore source: debian-watch-does-not-check-gpg-signature
+
+# not usable / suitable / useful, unfortunately
+# (may wish revisiting when script tests have become a thing)
+musescore source: testsuite-autopkgtest-missing

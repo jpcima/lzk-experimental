@@ -1,0 +1,41 @@
+Description: store preferences in workspaces sorted
+Author: mirabilos <tg@debian.org>
+Applied-Upstream: master, commit:1602f6d177cc993325faef0d5f56c4bf706681cc
+
+--- a/mscore/preferences.cpp
++++ b/mscore/preferences.cpp
+@@ -431,10 +431,10 @@ void Preferences::clearMidiRemote(int re
+       remove(baseKey);
+       }
+ 
+-QHash<QString, QVariant> Preferences::getDefaultLocalPreferences() {
++QMap<QString, QVariant> Preferences::getDefaultLocalPreferences() {
+       bool tmp = useLocalPrefs;
+       useLocalPrefs = false;
+-      QHash<QString, QVariant> defaultLocalPreferences;
++      QMap<QString, QVariant> defaultLocalPreferences;
+       for (QString s : {PREF_UI_CANVAS_BG_USECOLOR,
+                         PREF_UI_CANVAS_FG_USECOLOR,
+                         PREF_UI_CANVAS_BG_COLOR,
+--- a/mscore/preferences.h
++++ b/mscore/preferences.h
+@@ -300,8 +300,8 @@ class Preferences {
+       bool checkType(const QString key, QMetaType::Type t) const;
+ 
+       // Used with workspace
+-      QHash<QString, QVariant> localPreferences;
+-      QHash<QString, QVariant> getDefaultLocalPreferences();
++      QMap<QString, QVariant> localPreferences;
++      QMap<QString, QVariant> getDefaultLocalPreferences();
+       bool useLocalPrefs = false;
+ 
+    public:
+@@ -351,7 +351,7 @@ class Preferences {
+       void updateMidiRemote(int recordId, MidiRemoteType type, int data);
+       void clearMidiRemote(int recordId);
+ 
+-      QHash<QString, QVariant> getLocalPreferences()  { return localPreferences; }
++      QMap<QString, QVariant> getLocalPreferences()  { return localPreferences; }
+       void setLocalPreference(QString key, QVariant value);
+       void setUseLocalPreferences(bool value)         { useLocalPrefs = value;   }
+       bool getUseLocalPreferences()                   { return useLocalPrefs;    }

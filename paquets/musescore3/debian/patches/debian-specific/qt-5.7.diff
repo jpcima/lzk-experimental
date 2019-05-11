@@ -1,0 +1,17 @@
+Description: Disable plugins fully to be able to build with Qt 5.7
+ (needed *only* in stretch-backports-sloppy branch)
+Author: ABL <antonio.lotti@alice.it>
+Forwarded: not-needed
+Justification: backports-specific (everything else is in a separate patch)
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -75,7 +75,7 @@ else (BUILD_WEBENGINE)
+    SET (USE_WEBENGINE 0)
+ endif (BUILD_WEBENGINE)
+ 
+-set(SCRIPT_INTERFACE  TRUE)
++set(SCRIPT_INTERFACE  FALSE)
+ #  Look for Qt5
+ if (SCRIPT_INTERFACE)
+ SET(QT_MIN_VERSION    "5.8.0")

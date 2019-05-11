@@ -1,0 +1,61 @@
+Description: Add function missing in OSS-sALSA to fix non-Linux compile;
+ fixup int vs. ssize_t issue in related code to ensure it will work.
+Author: mirabilos <tg@debian.org>
+Forwarded: not-needed
+Justification: Workaround for bug in another package, Debian-specific
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=870787
+
+--- a/mscore/mididriver.cpp
++++ b/mscore/mididriver.cpp
+@@ -100,6 +100,28 @@ bool Port::operator<(const Port& p) cons
+ #include "alsa.h"
+ #include "alsamidi.h"
+ 
++// The following is a Debian-specific hack which is likely to
++// not work forever, but needed right now: on kfreebsd and hurd,
++// we do not have ALSA but OSS provides the salsa compatibility
++// layer, which currently lacks a single, trivial function. We
++// need to distinguish salsa from ALSA (hard because the former
++// use, in Debian, the latter’s includes); one hackish way is
++// to use the reported library version as salsa still reports
++// version 1.0.x whereas ALSA on stretch shows 1.x (jessie also
++// has 0.x, but even sloppy backports are closed, so we don’t
++// need to worry about it any more). Simply inline the gist.
++// This is now https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=870787
++#if (SND_LIB_MAJOR < 2) && (SND_LIB_MINOR < 1)
++#define snd_seq_event_length(ev) __extension__({		\
++	ssize_t snd_seq_event_length__len;			\
++								\
++	snd_seq_event_length__len = sizeof(snd_seq_event_t);	\
++	if (snd_seq_ev_is_variable(ev))				\
++		snd_seq_event_length__len += ev->data.ext.len;	\
++	(len);							\
++})
++#endif
++
+ namespace Ms {
+ static const unsigned int inCap  = SND_SEQ_PORT_CAP_SUBS_READ;
+ static const unsigned int outCap = SND_SEQ_PORT_CAP_SUBS_WRITE;
+@@ -531,11 +553,11 @@ void AlsaMidiDriver::write(const Event&
+ 
+ bool AlsaMidiDriver::putEvent(snd_seq_event_t* event)
+       {
+-      int error;
++      ssize_t error;
+ 
+       do {
+             error   = snd_seq_event_output_direct(alsaSeq, event);
+-            int len = snd_seq_event_length(event);
++            ssize_t len = snd_seq_event_length(event);
+             if (error == len) {
+                   return false;
+                   }
+@@ -550,7 +572,7 @@ bool AlsaMidiDriver::putEvent(snd_seq_ev
+                         }
+                   }
+             else
+-                  qDebug("MidiAlsaDevice::putEvent(): midi write returns %d, expected %d: %s",
++                  qDebug("MidiAlsaDevice::putEvent(): midi write returns %zd, expected %zd: %s",
+                      error, len, snd_strerror(error));
+             } while (error == -12);
+       return true;

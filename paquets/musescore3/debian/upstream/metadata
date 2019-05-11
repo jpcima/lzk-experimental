@@ -1,0 +1,14 @@
+{
+  "Archive": "GitHub",
+  "Bug-Database": "https://musescore.org/en/project/issues/musescore",
+  "Bug-Submit": "https://musescore.org/en/node/add/project_issue?pid=1236",
+  "CLA": "https://musescore.org/en/cla",
+  "Changelog": "https://musescore.org/en/developers-handbook/release-notes",
+  "Donation": "https://musescore.org/en/donate",
+  "FAQ": "https://musescore.org/en/faq",
+  "Name": "MuseScore",
+  "Registration": "https://musescore.com/user/register",
+  "Repository": "git@github.com:musescore/MuseScore.git",
+  "Repository-Browse": "https://github.com/musescore/MuseScore",
+  "Screenshots": "https://musescore.org/en/tutorials"
+}

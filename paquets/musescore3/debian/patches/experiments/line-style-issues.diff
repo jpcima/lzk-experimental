@@ -1,0 +1,402 @@
+Author: Marc Sabatella <marc@outsideshore.com>
+Description: fix #287445, fix #287484, fix #284074: line style issues
+ + update textline style after fix for 287484
+Forwarded: https://github.com/musescore/MuseScore/pull/4894
+
+--- a/libmscore/element.cpp
++++ b/libmscore/element.cpp
+@@ -1178,13 +1178,17 @@ QVariant Element::propertyDefault(Pid pi
+                   return true;
+             case Pid::COLOR:
+                   return MScore::defaultColor;
+-            case Pid::PLACEMENT:
++            case Pid::PLACEMENT: {
++                  QVariant v = ScoreElement::propertyDefault(pid);
++                  if (v.isValid())        // if it's a styled property
++                        return v;
+                   return int(Placement::BELOW);
++                  }
+             case Pid::SELECTED:
+                   return false;
+             case Pid::OFFSET: {
+                   QVariant v = ScoreElement::propertyDefault(pid);
+-                  if (v.isValid())        // if its a styled property
++                  if (v.isValid())        // if it's a styled property
+                         return v;
+                   return QPointF();
+                   }
+--- a/libmscore/hairpin.cpp
++++ b/libmscore/hairpin.cpp
+@@ -48,7 +48,7 @@ static const ElementStyle hairpinStyle {
+       { Sid::hairpinHeight,                      Pid::HAIRPIN_HEIGHT             },
+       { Sid::hairpinContHeight,                  Pid::HAIRPIN_CONT_HEIGHT        },
+       { Sid::hairpinPlacement,                   Pid::PLACEMENT                  },
+-      { Sid::hairpinPosAbove,                    Pid::OFFSET                     },
++      { Sid::hairpinPosBelow,                    Pid::OFFSET                     },
+       { Sid::hairpinLineStyle,                   Pid::LINE_STYLE                 },
+       };
+ 
+@@ -768,6 +768,9 @@ QVariant Hairpin::propertyDefault(Pid id
+             case Pid::HAIRPIN_TYPE:
+                   return int(HairpinType::CRESC_HAIRPIN);
+ 
++            case Pid::PLACEMENT:
++                  return score()->styleV(Sid::hairpinPlacement);
++
+             default:
+                   return TextLineBase::propertyDefault(id);
+             }
+--- a/libmscore/line.cpp
++++ b/libmscore/line.cpp
+@@ -993,6 +993,11 @@ void SLine::writeProperties(XmlWriter& x
+       for (const SpannerSegment* seg : spannerSegments()) {
+             xml.stag("Segment", seg);
+             xml.tag("subtype", int(seg->spannerSegmentType()));
++            // TODO:
++            // NOSTYLE offset written in Element::writeProperties,
++            // so we probably don't need to duplicate it here
++            // see https://musescore.org/en/node/286848
++            //if (seg->propertyFlags(Pid::OFFSET) & PropertyFlags::UNSTYLED)
+             xml.tag("offset", seg->offset() / _spatium);
+             xml.tag("off2", seg->userOff2() / _spatium);
+             seg->Element::writeProperties(xml);
+--- a/libmscore/pedal.cpp
++++ b/libmscore/pedal.cpp
+@@ -51,6 +51,8 @@ static const ElementStyle pedalStyle {
+ void PedalSegment::layout()
+       {
+       TextLineBaseSegment::layout();
++      if (isStyled(Pid::OFFSET))
++            roffset() = pedal()->propertyDefault(Pid::OFFSET).toPointF();
+       autoplaceSpannerSegment(spatium() * .7);
+       }
+ 
+@@ -181,6 +183,9 @@ QVariant Pedal::propertyDefault(Pid prop
+             case Pid::LINE_VISIBLE:
+                   return true;
+ 
++            case Pid::PLACEMENT:
++                  return score()->styleV(Sid::pedalPlacement);
++
+             default:
+                   return TextLineBase::propertyDefault(propertyId);
+             }
+--- a/libmscore/style.cpp
++++ b/libmscore/style.cpp
+@@ -506,8 +506,8 @@ static const StyleType styleTypes[] {
+       { Sid::autoplaceVerticalAlignRange, "autoplaceVerticalAlignRange",     int(VerticalAlignRange::SYSTEM) },
+ 
+       { Sid::textLinePlacement,         "textLinePlacement",         int(Placement::ABOVE)  },
+-      { Sid::textLinePosAbove,          "textLinePosAbove",          QPointF(.0, -3.5) },
+-      { Sid::textLinePosBelow,          "textLinePosBelow",          QPointF(.0, 3.5) },
++      { Sid::textLinePosAbove,          "textLinePosAbove",          QPointF(.0, -1.0) },
++      { Sid::textLinePosBelow,          "textLinePosBelow",          QPointF(.0, 1.0) },
+       { Sid::textLineFrameType,         "textLineFrameType",          int(FrameType::NO_FRAME) },
+       { Sid::textLineFramePadding,      "textLineFramePadding",       0.2 },
+       { Sid::textLineFrameWidth,        "textLineFrameWidth",         0.1 },
+--- a/libmscore/textline.cpp
++++ b/libmscore/textline.cpp
+@@ -34,6 +34,8 @@ static const ElementStyle textLineStyle
+       { Sid::textLineTextAlign,                  Pid::BEGIN_TEXT_ALIGN        },
+       { Sid::textLineTextAlign,                  Pid::CONTINUE_TEXT_ALIGN     },
+       { Sid::textLineTextAlign,                  Pid::END_TEXT_ALIGN          },
++      { Sid::textLinePlacement,                  Pid::PLACEMENT               },
++      { Sid::textLinePosAbove,                   Pid::OFFSET                  },
+       };
+ 
+ //---------------------------------------------------------
+@@ -43,7 +45,6 @@ static const ElementStyle textLineStyle
+ TextLineSegment::TextLineSegment(Spanner* sp, Score* s)
+    : TextLineBaseSegment(sp, s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
+       {
+-      setPlacement(Placement::ABOVE);
+       }
+ 
+ //---------------------------------------------------------
+@@ -53,6 +54,8 @@ TextLineSegment::TextLineSegment(Spanner
+ void TextLineSegment::layout()
+       {
+       TextLineBaseSegment::layout();
++      if (isStyled(Pid::OFFSET))
++            roffset() = textLine()->propertyDefault(Pid::OFFSET).toPointF();
+       autoplaceSpannerSegment(spatium() * .7);
+       }
+ 
+@@ -65,7 +68,6 @@ TextLine::TextLine(Score* s)
+       {
+       initElementStyle(&textLineStyle);
+ 
+-      setPlacement(Placement::ABOVE);
+       setBeginText("");
+       setContinueText("");
+       setEndText("");
+@@ -90,6 +92,26 @@ TextLine::TextLine(const TextLine& tl)
+       }
+ 
+ //---------------------------------------------------------
++//   write
++//---------------------------------------------------------
++
++void TextLine::write(XmlWriter& xml) const
++      {
++      if (!xml.canWrite(this))
++            return;
++      xml.stag(this);
++      // other styled properties are included in TextLineBase pids list
++      writeProperty(xml, Pid::PLACEMENT);
++      writeProperty(xml, Pid::OFFSET);
++      TextLineBase::writeProperties(xml);
++      xml.etag();
++      }
++
++static const ElementStyle textLineSegmentStyle {
++      { Sid::textLinePosAbove,      Pid::OFFSET       },
++      };
++
++//---------------------------------------------------------
+ //   createLineSegment
+ //---------------------------------------------------------
+ 
+@@ -100,10 +122,29 @@ LineSegment* TextLine::createLineSegment
+       // note-anchored line segments are relative to system not to staff
+       if (anchor() == Spanner::Anchor::NOTE)
+             seg->setFlag(ElementFlag::ON_STAFF, false);
++      seg->initElementStyle(&textLineSegmentStyle);
+       return seg;
+       }
+ 
+ //---------------------------------------------------------
++//   getPropertyStyle
++//---------------------------------------------------------
++
++Sid TextLineSegment::getPropertyStyle(Pid pid) const
++      {
++      if (pid == Pid::OFFSET)
++            return spanner()->placeAbove() ? Sid::textLinePosAbove : Sid::textLinePosBelow;
++      return TextLineBaseSegment::getPropertyStyle(pid);
++      }
++
++Sid TextLine::getPropertyStyle(Pid pid) const
++      {
++      if (pid == Pid::OFFSET)
++            return placeAbove() ? Sid::textLinePosAbove : Sid::textLinePosBelow;
++      return TextLineBase::getPropertyStyle(pid);
++      }
++
++//---------------------------------------------------------
+ //   propertyDefault
+ //---------------------------------------------------------
+ 
+@@ -111,7 +152,7 @@ QVariant TextLine::propertyDefault(Pid p
+       {
+       switch (propertyId) {
+             case Pid::PLACEMENT:
+-                  return int(Placement::ABOVE);
++                  return score()->styleV(Sid::textLinePlacement);
+             case Pid::BEGIN_TEXT:
+             case Pid::CONTINUE_TEXT:
+             case Pid::END_TEXT:
+--- a/libmscore/textline.h
++++ b/libmscore/textline.h
+@@ -24,6 +24,9 @@ class Note;
+ //---------------------------------------------------------
+ 
+ class TextLineSegment final : public TextLineBaseSegment {
++
++      virtual Sid getPropertyStyle(Pid) const override;
++
+    public:
+       TextLineSegment(Spanner* sp, Score* s);
+       virtual ElementType type() const override       { return ElementType::TEXTLINE_SEGMENT; }
+@@ -37,6 +40,9 @@ class TextLineSegment final : public Tex
+ //---------------------------------------------------------
+ 
+ class TextLine final : public TextLineBase {
++
++      virtual Sid getPropertyStyle(Pid) const override;
++
+    public:
+       TextLine(Score* s);
+       TextLine(const TextLine&);
+@@ -44,6 +50,7 @@ class TextLine final : public TextLineBa
+ 
+       virtual TextLine* clone() const           { return new TextLine(*this); }
+       virtual ElementType type() const          { return ElementType::TEXTLINE; }
++      virtual void write(XmlWriter&) const override;
+       virtual LineSegment* createLineSegment() override;
+       virtual QVariant propertyDefault(Pid) const override;
+       };
+--- a/libmscore/trill.cpp
++++ b/libmscore/trill.cpp
+@@ -47,6 +47,7 @@ int trillTableSize() {
+ 
+ static const ElementStyle trillStyle {
+       { Sid::trillPlacement, Pid::PLACEMENT },
++      { Sid::trillPosAbove,  Pid::OFFSET    },
+       };
+ 
+ //---------------------------------------------------------
+@@ -136,6 +137,9 @@ void TrillSegment::layout()
+       {
+       if (staff())
+             setMag(staff()->mag(tick()));
++      if (spanner()->placeBelow())
++            rypos() = staff() ? staff()->height() : 0.0;
++
+       if (isSingleType() || isBeginType()) {
+             Accidental* a = trill()->accidental();
+             if (a) {
+@@ -164,6 +168,8 @@ void TrillSegment::layout()
+             }
+       else
+             symbolLine(SymId::wiggleTrill, SymId::wiggleTrill);
++      if (isStyled(Pid::OFFSET))
++            roffset() = trill()->propertyDefault(Pid::OFFSET).toPointF();
+ 
+       autoplaceSpannerSegment(spatium() * 1.0);
+       }
+@@ -264,7 +270,6 @@ Trill::Trill(Score* s)
+       _ornamentStyle = MScore::OrnamentStyle::DEFAULT;
+       setPlayArticulation(true);
+       initElementStyle(&trillStyle);
+-      resetProperty(Pid::OFFSET);
+       }
+ 
+ Trill::~Trill()
+--- a/libmscore/vibrato.cpp
++++ b/libmscore/vibrato.cpp
+@@ -24,7 +24,6 @@
+ 
+ namespace Ms {
+ 
+-
+ //---------------------------------------------------------
+ //   vibratoTable
+ //    must be in sync with Vibrato::Type
+@@ -103,6 +102,9 @@ void VibratoSegment::layout()
+       {
+       if (staff())
+             setMag(staff()->mag(tick()));
++      if (spanner()->placeBelow())
++            rypos() = staff() ? staff()->height() : 0.0;
++
+       if (isSingleType() || isBeginType()) {
+             switch (vibrato()->vibratoType()) {
+                   case Vibrato::Type::GUITAR_VIBRATO:
+@@ -121,6 +123,8 @@ void VibratoSegment::layout()
+             }
+       else
+             symbolLine(SymId::wiggleVibrato, SymId::wiggleVibrato);
++      if (isStyled(Pid::OFFSET))
++            roffset() = vibrato()->propertyDefault(Pid::OFFSET).toPointF();
+ 
+       autoplaceSpannerSegment(spatium() * 1.0);
+       }
+@@ -146,15 +150,24 @@ Element* VibratoSegment::propertyDelegat
+       }
+ 
+ //---------------------------------------------------------
++//   vibratoStyle
++//---------------------------------------------------------
++
++static const ElementStyle vibratoStyle {
++      { Sid::vibratoPlacement,      Pid::PLACEMENT    },
++      { Sid::vibratoPosAbove,       Pid::OFFSET       },
++      };
++
++//---------------------------------------------------------
+ //   Vibrato
+ //---------------------------------------------------------
+ 
+ Vibrato::Vibrato(Score* s)
+   : SLine(s)
+       {
++      initElementStyle(&vibratoStyle);
+       _vibratoType = Type::GUITAR_VIBRATO;
+       setPlayArticulation(true);
+-      setPlacement(Placement::ABOVE);
+       }
+ 
+ Vibrato::~Vibrato()
+@@ -176,6 +189,10 @@ void Vibrato::layout()
+             }
+       }
+ 
++static const ElementStyle vibratoSegmentStyle {
++      { Sid::vibratoPosAbove,       Pid::OFFSET       },
++      };
++
+ //---------------------------------------------------------
+ //   createLineSegment
+ //---------------------------------------------------------
+@@ -185,6 +202,7 @@ LineSegment* Vibrato::createLineSegment(
+       VibratoSegment* seg = new VibratoSegment(this, score());
+       seg->setTrack(track());
+       seg->setColor(color());
++      seg->initElementStyle(&vibratoSegmentStyle);
+       return seg;
+       }
+ 
+@@ -199,6 +217,8 @@ void Vibrato::write(XmlWriter& xml) cons
+       xml.stag(this);
+       xml.tag("subtype", vibratoTypeName());
+       writeProperty(xml, Pid::PLAY);
++      for (const StyledProperty& spp : *styledProperties())
++            writeProperty(xml, spp.pid);
+       SLine::writeProperties(xml);
+       xml.etag();
+       }
+@@ -261,6 +281,24 @@ QString Vibrato::vibratoTypeUserName() c
+       }
+ 
+ //---------------------------------------------------------
++//   getPropertyStyle
++//---------------------------------------------------------
++
++Sid VibratoSegment::getPropertyStyle(Pid pid) const
++      {
++      if (pid == Pid::OFFSET)
++            return spanner()->placeAbove() ? Sid::vibratoPosAbove : Sid::vibratoPosBelow;
++      return LineSegment::getPropertyStyle(pid);
++      }
++
++Sid Vibrato::getPropertyStyle(Pid pid) const
++      {
++      if (pid == Pid::OFFSET)
++            return placeAbove() ? Sid::vibratoPosAbove : Sid::vibratoPosBelow;
++      return SLine::getPropertyStyle(pid);
++      }
++
++//---------------------------------------------------------
+ //   getProperty
+ //---------------------------------------------------------
+ 
+@@ -311,7 +349,7 @@ QVariant Vibrato::propertyDefault(Pid pr
+             case Pid::PLAY:
+                   return true;
+             case Pid::PLACEMENT:
+-                  return int(Placement::ABOVE);
++                  return score()->styleV(Sid::vibratoPlacement);
+             default:
+                   return SLine::propertyDefault(propertyId);
+             }
+--- a/libmscore/vibrato.h
++++ b/libmscore/vibrato.h
+@@ -29,6 +29,7 @@ class VibratoSegment final : public Line
+ 
+       void symbolLine(SymId start, SymId fill);
+       void symbolLine(SymId start, SymId fill, SymId end);
++      virtual Sid getPropertyStyle(Pid) const override;
+ 
+    protected:
+    public:
+@@ -51,6 +52,9 @@ class VibratoSegment final : public Line
+ //---------------------------------------------------------
+ 
+ class Vibrato final : public SLine {
++
++      virtual Sid getPropertyStyle(Pid) const override;
++
+    public:
+       enum class Type : char {
+             GUITAR_VIBRATO, GUITAR_VIBRATO_WIDE, VIBRATO_SAWTOOTH, VIBRATO_SAWTOOTH_WIDE

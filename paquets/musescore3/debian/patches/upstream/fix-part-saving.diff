@@ -1,0 +1,84 @@
+Author: Peter Hieu Vu <peter.vu8@gmail.com>
+Description: fix #285781: fix part saving and loading of scores
+ + fix improper use of validScores
+Applied-Upstream: master, commit:745aee8c6a
+
+--- a/libmscore/read206.cpp
++++ b/libmscore/read206.cpp
+@@ -3762,7 +3762,7 @@ static bool readScore(Score* score, XmlR
+                   else {
+                         e.tracks().clear();
+                         MasterScore* m = score->masterScore();
+-                        Score* s = new Score(m, MScore::defaultStyle());
++                        Score* s = new Score(m, MScore::baseStyle());
+                         Excerpt* ex = new Excerpt(m);
+ 
+                         ex->setPartScore(s);
+--- a/libmscore/read301.cpp
++++ b/libmscore/read301.cpp
+@@ -166,7 +166,7 @@ bool Score::read(XmlReader& e)
+                   else {
+                         e.tracks().clear();     // ???
+                         MasterScore* m = masterScore();
+-                        Score* s       = new Score(m, false);
++                        Score* s       = new Score(m, MScore::baseStyle());
+                         Excerpt* ex    = new Excerpt(m);
+ 
+                         ex->setPartScore(s);
+--- a/libmscore/score.cpp
++++ b/libmscore/score.cpp
+@@ -305,7 +305,7 @@ Score::Score(MasterScore* parent, bool f
+ Score::Score(MasterScore* parent, const MStyle& s)
+    : Score{parent}
+       {
+-      Score::validScores.erase(this);
++      Score::validScores.insert(this);
+       _style  = s;
+       }
+ 
+@@ -327,6 +327,7 @@ Score::~Score()
+             }
+       qDeleteAll(_parts);
+       qDeleteAll(_staves);
++      Score::validScores.erase(this);
+ //      qDeleteAll(_pages);         // TODO: check
+       _masterScore = 0;
+       }
+--- a/mscore/file.cpp
++++ b/mscore/file.cpp
+@@ -341,7 +341,7 @@ MasterScore* MuseScore::readScore(const
+       if (name.isEmpty())
+             return 0;
+ 
+-      MasterScore* score = new MasterScore(MScore::defaultStyle());
++      MasterScore* score = new MasterScore(MScore::baseStyle());
+       setMidiReopenInProgress(name);
+       Score::FileError rv = Ms::readScore(score, name, false);
+       if (rv == Score::FileError::FILE_TOO_OLD || rv == Score::FileError::FILE_TOO_NEW || rv == Score::FileError::FILE_CORRUPTED) {
+@@ -352,7 +352,7 @@ MasterScore* MuseScore::readScore(const
+                         delete score;
+                         score = new MasterScore();
+                         score->setMovements(new Movements());
+-                        score->setStyle(MScore::defaultStyle());
++                        score->setStyle(MScore::baseStyle());
+                         rv = Ms::readScore(score, name, true);
+                         }
+                   else
+--- a/mscore/musescore.cpp
++++ b/mscore/musescore.cpp
+@@ -3308,6 +3308,7 @@ static void loadScores(const QStringList
+ 
+                               MasterScore* score = mscore->readScore(startScore);
+                               if (startScore.startsWith(":/") && score) {
++                                    score->setStyle(MScore::defaultStyle());
+                                     score->setName(mscore->createDefaultName());
+                                     // TODO score->setPageFormat(*MScore::defaultStyle().pageFormat());
+                                     score->doLayout();
+@@ -3316,6 +3317,7 @@ static void loadScores(const QStringList
+                               if (score == 0) {
+                                     score = mscore->readScore(":/data/My_First_Score.mscx");
+                                     if (score) {
++                                          score->setStyle(MScore::defaultStyle());
+                                           score->setName(mscore->createDefaultName());
+                                           // TODO score->setPageFormat(*MScore::defaultStyle().pageFormat());
+                                           score->doLayout();

@@ -1,0 +1,11 @@
+# cf. https://github.com/w3c/smufl/issues/74#issuecomment-320513315
+musescore3: spelling-error-in-binary usr/bin/mscore3 possibile possible
+
+# false positive
+musescore3: spelling-error-in-binary usr/bin/mscore3 LaOd Load
+
+# part of OpenType font embedded in the binary
+musescore3: spelling-error-in-binary usr/bin/mscore3 pres press
+
+# available in the musescore3-common binary package
+musescore3: no-upstream-changelog

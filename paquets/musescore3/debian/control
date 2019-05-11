@@ -1,0 +1,219 @@
+Source: musescore
+Section: sound
+Priority: optional
+Maintainer: Thorsten Glaser <tg@mirbsd.de>
+Homepage: https://musescore.org/en
+Build-Depends: cmake,
+               debhelper-compat (= 12),
+# for the tests (but useful to ensure installability before building)
+#              imagemagick,
+               mksh,
+               qml-module-qtquick-controls,
+               qml-module-qtquick-dialogs,
+               qml-module-qtquick-layouts,
+               qml-module-qtquick2,
+               xauth,
+               xvfb,
+# to build
+               g++ (>= 4:4.8),
+               libasound2-dev,
+               libfreetype6-dev (>= 2.5.2),
+               libjack-dev,
+               libmp3lame-dev,
+               libpoppler-qt5-dev,
+               libportmidi-dev [linux-any],
+               libpulse-dev,
+               libqt5opengl5-dev,
+               libqt5svg5-dev,
+               libqt5webkit5-dev,
+               libqt5xmlpatterns5-dev,
+               libsndfile1-dev (>= 1.0.25),
+               portaudio19-dev,
+               qtbase5-dev,
+               qtdeclarative5-dev (>= 5.7),
+               qtscript5-dev,
+               qttools5-dev,
+               qttools5-dev-tools,
+               zlib1g-dev
+Standards-Version: 4.3.0
+#Rules-Requires-Root: no
+VCS-git: https://evolvis.org/anonscm/git/alioth/musescore.git -b stretch-backports-sloppy
+VCS-Browser: https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=alioth/musescore.git;a=shortlog;h=refs/heads/stretch-backports-sloppy
+
+Package: musescore3-common
+Architecture: all
+Multi-Arch: foreign
+Pre-Depends: ${misc:Pre-Depends}
+Depends: musescore-general-soundfont-small | musescore-compatible-soundfont,
+ ${misc:Depends}
+Description: MuseScore 3 (music composition and notation) shared files
+ Demonstration scores and templates, styles, localisations, some
+ plugins for MuseScore, the Open Source (GNU GPL) cross-platform
+ multi-lingual music notation software.
+ .
+ In contrast to earlier versions, no sound font is provided by
+ default, but the Depends ensure a suitable one is installed,
+ normally the compact, full orchestral and band sound, one that
+ is shipped with MuseScore from version 2.2 onwards, or its more
+ limited 2.1 counterpart fluidr3mono-gm-soundfont.
+
+Package: musescore3
+Architecture: any
+Multi-Arch: foreign
+Pre-Depends: ${misc:Pre-Depends}
+Depends: desktop-file-utils,
+         libqt5sql5-sqlite,
+         musescore3-common (>> 3.0~),
+         musescore3-common (<< 3.1~),
+         qml-module-qtquick-controls,
+         qml-module-qtquick-dialogs,
+         qml-module-qtquick-layouts,
+         qml-module-qtquick2,
+         shared-mime-info,
+         xdg-utils,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Recommends: libmp3lame0, pulseaudio-utils
+Description: cross-platform multi-lingual music composition and notation
+ MuseScore is an Open Source (GNU GPL) music notation software that runs
+ on all platforms supported by Qt5 (GNU/Linux, MacOS X, Windows), and is
+ available in over forty different languages. It features an easy to use
+ WYSIWYG editor with audio score playback for results that look and sound
+ beautiful, rivaling commercial offerings like Finale and Sibelius.
+ .
+ Create, play back and print sheet music for free. Features include:
+  - easy-to-use and customisable interface
+  - albums combining multiple scores
+  - unlimited score length
+  - unlimited number of staves per system
+  - up to four independent voices per staff
+  - score creation wizard and templates
+  - easy and fast note entry with a (PC) keyboard, the mouse, including
+    an on-screen virtual (piano) keyboard, or MIDI (step-time, real-time)
+  - continuous view: focus on the content, scrolling by as an endless
+    ribbon, undistracted by line breaks or page breaks; switch to page
+    view to polish up for printing
+  - automatic part extraction and transposition; advanced transposition:
+    transpose a selected passage to any key, or by any interval — or
+    even transpose diatonically within the same key
+  - repeats, including segnos, codas, measure repeats, advanced repeats
+  - dynamics, articulations and other expression markings
+  - playback support for almost all notation elements
+  - custom text markings
+  - style rules that apply to the whole score at once
+  - lyrics
+  - chord symbols
+  - Jazz notation, including lead sheets and slash notation
+  - swing and shuffle playback
+  - integrated sequencer and two software synthesisers (FluidSynth for
+    SF2/SF3, Zerberus for SFZ), which also can use third-party soundfonts
+  - mixer for instrument levels and effects
+  - mixing and panning for individual parts
+  - percussion notation
+  - early music notation
+  - cross-staff beaming
+  - import of graphics
+  - custom key signatures
+  - additive time signatures
+  - user-defined score styles
+  - and much more…
+ .
+ Choir features:
+  - powerful lyrics copy and paste tools
+  - implode/explode: combine up to four voices on one staff,
+    then separate to individual staves
+  - hide empty vocal staves, such as in a piano intro
+  - figured bass for historical notation
+  - smart lyrics: unlimited verses, with notes and staves automatically
+    spaced, and verse numbers automatically aligned
+  - voice leading checker: download the Check Harmony Rules proofreading
+    plugin to check for errors in your part writing, according to
+    standard rules
+  - part mixer: mute, solo, or change volume of staves to learn
+    individual lines — settings even apply to MP3 export
+ .
+ Piano features:
+  - support for solo + piano (add small staff with different instrument)
+  - support for cadenzas (smaller notes and variable length measures)
+  - complete notation: pedaling, fingering, cross-staff beaming — you
+    name it; everything needed to write piano sheet music is here
+ .
+ Guitar features:
+  - bends, fingerings, and other common guitar notations supported
+  - add/remove linked staves any time; enter notes on either standard
+    (pitched five-line) or TAB staff
+  - percussion/drumset also included
+  - templates include guitar, tablature, guitar+tablature, rock/pop band
+  - complete tablature: multiple tab styles available — from note symbols
+    outside the staff to upside-down strings — and linked standard/tab
+    staff pairs
+  - Guitar Pro import: MuseScore can now open files from Guitar Pro, so
+    you can easily migrate over. Import filters are improving with every
+    release; GP3, GP4, GP5, GP6, GTP, GPX are currently supported.
+  - Fretboard diagrams: 21 default chords for every key, and a powerful
+    editor to create your own — with barre, fret position, and any number
+    of strings
+  - beyond guitar: banjo, mandolin, ukulele, oud; custom string tunings;
+    even historical lute tablature: MuseScore does them all.
+ .
+ Orchestral features:
+  - templates for common instrumentations
+  - custom linked parts (e.g. create choral score from orchestra+chorus):
+    any change you make to the content of any part is immediately
+    reflected in the full score — and vice versa
+  - powerful style controls: edit the formatting of parts and score
+    independently — or apply the same style to all parts with one click
+  - one-click transposition: instantly switch between transposed and
+    concert pitch: sounding pitches stay the same while the written notes
+    change
+ .
+ Jazz features:
+  - templates for Jazz Lead Sheet, Big Band and Jazz Combo
+  - real “handwritten” Book-style jazz font for text and chord symbols
+  - formatting tools include adding line breaks every X measures
+  - instantly switch between transposed and concert pitch
+  - intelligent chord symbol: chord names are automatically formatted
+    when you finish typing — plus, they transpose with the notes
+  - easy slashes: commands to fill bars with slashes — and to turn notes
+    into rhythmic slashes, and even accent notation above the staff
+ .
+ Marching ensembles features (needs the MDL extension):
+  - marching band, indoor percussion, front ensemble, drumline and drum
+    corps (even G bugles); no setup or configuration — select a template,
+    start writing
+ .
+ Band features:
+  - diverse templates: concert band, brass band, marching band, battery
+    and pit percussion — ready out-of-the-box (plus big band for jazz)
+  - custom linked parts: you can even keep a drumline score linked to a
+    full marching band score and to individual percussion parts
+ .
+ Most elements in MuseScore are laid out automatically on a “virtual note
+ sheet”, with a near professional-quality layout engine, but can also be
+ positioned manually, giving you total control of every score element’s
+ position. The capabilities of MuseScore can be extended via plugins and
+ extensions, and the growing repository on musescore.org contains many
+ plugins submitted by users and an active development team.
+ .
+ MuseScore includes a set of sounds that reproduce common instruments (as
+ defined by General MIDI) without taking up a lot of disk space or memory
+ providing full orchestral and band sounds (with the Drumline extension
+ installed this includes marching percussion). The general (non-Drumline)
+ sound font is available as musescore-general-soundfont Debian package,
+ if you wish to reuse it with other synthesisers.) You can also load any
+ sound font you prefer for a wider variety of sounds or for more realism.
+ .
+ MuseScore can import and export MIDI and MusicXML files, and it can also
+ import from Capella and several other programs. MuseScore can export to
+ PDF, PNG, and other graphic formats, to WAV and other audio formats such
+ as OGG Vorbis and MP3, or to GNU Lilypond for an alternative layout and
+ print option.
+ .
+ MuseScore can upload scores to musescore.com, a score sharing site, and
+ send scrolling sheet music videos to YouTube. In addition to the desktop
+ software, you can rehearse “on the go” with MuseScore mobile apps (which
+ do not support note entry, but many advanced playback functions). Note
+ that all of these are commercial or otherwise non-free offers optionally
+ integrated with, but not part of, the Free notation program. Scrolling
+ video scores feature the notes highlighted in the score as they sound —
+ and highlighted on a virtual piano keyboard below.

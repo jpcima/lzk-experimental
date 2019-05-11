@@ -1,0 +1,92 @@
+export LC_ALL=C
+unset LANGUAGE
+export QT_QPA_PLATFORM=vnc
+unset DBUS_SESSION_BUS_ADDRESS DESKTOP_SESSION DISPLAY WINDOWID
+unset GPG_AGENT_INFO MONKEYSPHERE_VALIDATION_AGENT_SOCKET SSH_AUTH_SOCK
+unset XDG_CURRENT_DESKTOP XDG_RUNTIME_DIR XDG_SESSION_COOKIE XDM_MANAGED
+
+if ! v=$(dpkg-query -W --showformat='${Version}' qtbase5-dev); then
+	print -ru2 -- "E: could not determine qtbase5-dev version"
+	exit 255
+fi
+
+case x$v {
+(x[0-9]*) ;;
+(x)	print -ru2 -- "E: empty qtbase5-dev version"
+	exit 255 ;;
+(x*)	print -ru2 -- "E: implausible qtbase5-dev version ${v@Q}"
+	exit 255 ;;
+}
+
+if dpkg --compare-versions "$v" lt 5.11; then
+	print -ru2 -- "I: Qt5 too old for running the tests, skipping"
+	exit 0
+fi
+
+set -e
+set -o pipefail
+rm -rf /tmp/testhome
+mkdir /tmp/testhome
+export HOME=/tmp/testhome
+set -x
+
+objdir=$(perl -MDebian::Debhelper::Dh_Buildsystems -e \
+    'buildsystems_init(); print load_buildsystem("cmake", "configure")->get_builddir();')
+topdir=$(realpath .)
+
+# parse DEB_BUILD_OPTIONS
+j=
+J=
+fbdebug=0
+for i in "$@"; do
+	if [[ $i = parallel ]]; then
+		nproc=$(nproc) || nproc=1
+		j=-j$nproc
+		J=-j
+	elif [[ $i = parallel=* ]]; then
+		j=-j${i#*=}
+		J=$j
+	elif [[ $i = fbdebug ]]; then
+		fbdebug=1
+	fi
+done
+
+# parse INSTALL_NAME
+i=$(fgrep INSTALL_NAME "$objdir/config.h")
+i=${i#*\"}
+i=${i%\"*}
+if [[ -z $i || $i = *$'\n'* ]]; then
+	print -ru2 -- "E: could not determine INSTALL_NAME"
+	print -ru2 -- I: output was \<$i\>
+	exit 1
+fi
+i=${i%%+(/)}
+
+# for idempotency
+rm -rf "$objdir/mtest/share" "$objdir/mtest/libmscore/share"
+# create symlinks for running the tests in situ
+mkdir "$objdir/mtest/share" "$objdir/mtest/libmscore/share"
+ln -s "$topdir/share" "$objdir/mtest/share/$i"
+ln -s "$topdir/share" "$objdir/mtest/libmscore/share/$i"
+
+# build the tests
+cd "$objdir/mtest"
+make $J
+
+# run mtests
+set +e
+if (( fbdebug )); then
+	set -A xvfbargs -- -a -s '-screen 0 1024x768x24 -fbdir /var/tmp'
+else
+	set -A xvfbargs -- -a
+fi
+xvfb-run "${xvfbargs[@]}" -- ctest -O ctest.log $j --output-on-failure
+rv=$?
+set -e +x
+(( !rv )) || print -ru2 -- "W: mtests failed with errorlevel $rv"
+x=$(fgrep 'tests failed out of' ctest.log)
+if [[ $x != *'passed, 0 tests failed'* ]]; then
+	print -ru2 -- N: $x
+	print -ru2 -- "W: mtests found failures"
+fi
+print -ru2 "I: mtests run"

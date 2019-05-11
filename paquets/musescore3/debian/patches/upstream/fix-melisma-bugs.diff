@@ -1,0 +1,29 @@
+Author: Marc Sabatella <marc@outsideshore.com>
+Description: melisma fixes
+ - fix #287992: temp melisma line not appearing after starting melisma
+ - fix #257131: backwards melisma when syllable overlaps end note
+Origin: upstream
+
+--- a/libmscore/lyricsline.cpp
++++ b/libmscore/lyricsline.cpp
+@@ -263,6 +263,9 @@ SpannerSegment* LyricsLine::layoutSystem
+       const bool tempMelismaTicks = (lyrics()->ticks() == Lyrics::TEMP_MELISMA_TICKS);
+       if (tempMelismaTicks && spannerSegments().size() > 0 && spannerSegments().front() == lineSegm)
+             lineSegm->rxpos2() += lyrics()->width();
++      // avoid backwards melisma
++      if (lineSegm->pos2().x() < 0)
++            lineSegm->rxpos2() = 0;
+       return lineSegm;
+       }
+ 
+--- a/mscore/editlyrics.cpp
++++ b/mscore/editlyrics.cpp
+@@ -407,7 +407,7 @@ void ScoreView::lyricsUnderscore()
+       // there will be no melisma anyway), set a temporary melisma duration
+       if (fromLyrics == lyrics && nextSegment) {
+             _score->startCmd();
+-            lyrics->undoChangeProperty(Pid::LYRIC_TICKS, Lyrics::TEMP_MELISMA_TICKS);
++            lyrics->undoChangeProperty(Pid::LYRIC_TICKS, Fraction::fromTicks(Lyrics::TEMP_MELISMA_TICKS));
+             _score->setLayoutAll();
+             _score->endCmd();
+             }

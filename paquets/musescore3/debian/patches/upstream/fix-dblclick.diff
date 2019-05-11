@@ -1,0 +1,14 @@
+Author: Marc Sabatella <marc@outsideshore.com>
+Description: fix #285923: wrong properties on double-click line over range
+Applied-Upstream: master, commit:bcf1749f84
+
+--- a/mscore/palette.cpp
++++ b/mscore/palette.cpp
+@@ -672,6 +672,7 @@ void Palette::applyPaletteElement(Palett
+                   for (int i = sel.staffStart(); i < endStaff; ++i) {
+                         Spanner* spanner = static_cast<Spanner*>(element->clone());
+                         spanner->setScore(score);
++                        spanner->styleChanged();
+                         score->cmdAddSpanner(spanner, i, startSegment, endSegment);
+                         }
+                   }

@@ -1,0 +1,197 @@
+Description: Revert the unison restriking patch
+ The restriking patch went into 2.2 (and up) and master
+ while it is not unquestioned. It was never meant to last; MIDI
+ channel assignment to individual voices must be made user-friendly,
+ but then, a reversal was intended by upstream. This diff implements
+ said reversal, in preparation of those other (UI, mostly) changes.
+Author: mirabilos <m@mirbsd.org>
+Bug: https://musescore.org/en/node/12971
+Forwarded: https://github.com/musescore/MuseScore/pull/3797
+ except reversal of commit d5a81add16497f9b4b7fac5717ea005c31dcc1cf
+
+--- a/libmscore/rendermidi.cpp
++++ b/libmscore/rendermidi.cpp
+@@ -222,7 +222,7 @@ static void playNote(EventMap* events, c
+       NPlayEvent ev(ME_NOTEON, channel, pitch, velo);
+       ev.setOriginatingStaff(staffIdx);
+       ev.setTuning(note->tuning());
+-      ev.setNote(note);
++      ev.notes.push_back(note);
+       if (offTime < onTime)
+             offTime = onTime;
+       events->insert(std::pair<int, NPlayEvent>(onTime, ev));
+--- a/mscore/exportmidi.cpp
++++ b/mscore/exportmidi.cpp
+@@ -285,19 +285,9 @@ bool ExportMidi::write(QIODevice* device
+ 
+                         for (auto i = events.begin(); i != events.end(); ++i) {
+                               const NPlayEvent& event = i->second;
+-
+-                              if (event.discard() == staffIdx + 1 && event.velo() > 0)
+-                                    // turn note off so we can restrike it in another track
+-                                    track.insert(pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,
+-                                                                     event.pitch(), 0));
+-
+                               if (event.getOriginatingStaff() != staffIdx)
+                                     continue;
+ 
+-                              if (event.discard() && event.velo() == 0)
+-                                    // ignore noteoff but restrike noteon
+-                                    continue;
+-
+                               char eventPort    = cs->masterScore()->midiPort(event.channel());
+                               char eventChannel = cs->masterScore()->midiChannel(event.channel());
+                               if (port != eventPort || channel != eventChannel)
+--- a/mscore/seq.cpp
++++ b/mscore/seq.cpp
+@@ -514,22 +514,15 @@ void Seq::playEvent(const NPlayEvent& ev
+       if (type == ME_NOTEON) {
+             bool mute = false;
+ 
+-            const Note* note = event.note();
+-            if (note) {
++            if (!event.notes.empty()) {
++                  const Note* note  = event.notes[0];
+                   Staff* staff      = note->staff();
+                   Instrument* instr = staff->part()->instrument(note->chord()->tick());
+                   const Channel* a = instr->playbackChannel(note->subchannel(), cs);
+                   mute = a->mute() || a->soloMute() || !staff->playbackVoice(note->voice());
+                   }
+-            if (!mute) {
+-                  if (event.discard()) { // ignore noteoff but restrike noteon
+-                        if (event.velo() > 0)
+-                              putEvent(NPlayEvent(ME_NOTEON, event.channel(), event.pitch(), 0) ,framePos);
+-                        else
+-                              return;
+-                        }
++            if (!mute)
+                   putEvent(event, framePos);
+-                  }
+             }
+       else if (type == ME_CONTROLLER || type == ME_PITCHBEND)
+             putEvent(event, framePos);
+@@ -1495,29 +1488,22 @@ void Seq::heartBeatTimeout()
+                         break;
+             const NPlayEvent& n = guiPos->second;
+             if (n.type() == ME_NOTEON) {
+-                  const Note* note1 = n.note();
+-                  if (n.velo()) {
++                  for (auto it = n.notes.cbegin(); it != n.notes.cend(); ++it) {
++                        const Note* note1 = *it;
+                         while (note1) {
+                               for (ScoreElement* se : note1->linkList()) {
+                                     if (!se->isNote())
+                                           continue;
+                                     Note* currentNote = toNote(se);
+-                                    currentNote->setMark(true);
+-                                    markedNotes.append(currentNote);
+-                                    r |= currentNote->canvasBoundingRect();
+-                                    }
+-                              note1 = note1->tieFor() ? note1->tieFor()->endNote() : 0;
+-                              }
+-                        }
+-                  else {
+-                        while (note1) {
+-                              for (ScoreElement* se : note1->linkList()) {
+-                                    if (!se->isNote())
+-                                          continue;
+-                                    Note* currentNote = toNote(se);
+-                                    currentNote->setMark(false);
++                                    if (n.velo()) {
++                                          currentNote->setMark(true);
++                                          markedNotes.append(currentNote);
++                                          }
++                                    else {
++                                          currentNote->setMark(false);
++                                          markedNotes.removeOne(currentNote);
++                                          }
+                                     r |= currentNote->canvasBoundingRect();
+-                                    markedNotes.removeOne(currentNote);
+                                     }
+                               note1 = note1->tieFor() ? note1->tieFor()->endNote() : 0;
+                               }
+--- a/mtest/libmscore/midi/tst_midi.cpp
++++ b/mtest/libmscore/midi/tst_midi.cpp
+@@ -413,8 +413,6 @@ void TestMidi::events()
+       QTextStream out(&filehandler);
+ 
+       for (auto iter = events.begin(); iter!= events.end(); ++iter){
+-            if (iter->second.discard())
+-                  continue;
+             out << qSetFieldWidth(5) << "Tick  =  ";
+             out << qSetFieldWidth(5) << iter->first;
+             out << qSetFieldWidth(5) << "   Type  = ";
+--- a/synthesizer/event.cpp
++++ b/synthesizer/event.cpp
+@@ -391,28 +391,37 @@ void EventMap::fixupMIDI()
+ 
+       auto it = begin();
+       while (it != end()) {
++            bool discard = false;
++
+             /* ME_NOTEOFF is never emitted, no need to check for it */
+             if (it->second.type() == ME_NOTEON) {
+                   unsigned short np = info[it->second.channel()].nowPlaying[it->second.pitch()];
+                   if (it->second.velo() == 0) {
+                         /* already off (should not happen) or still playing? */
+                         if (np == 0 || --np > 0)
+-                              it->second.setDiscard(1);
++                              discard = true;
+                         else {
+                               /* hoist NOTEOFF to same track as NOTEON */
+                               it->second.setOriginatingStaff(info[it->second.channel()].event[it->second.pitch()]->getOriginatingStaff());
++                              /* copy linked Notes */
++                              it->second.notes = info[it->second.channel()].event[it->second.pitch()]->notes;
+                               }
+                         }
+-                  else {
+-                        if (++np > 1)
+-                              /* restrike, possibly on different track */
+-                              it->second.setDiscard(info[it->second.channel()].event[it->second.pitch()]->getOriginatingStaff() + 1);
+-                        info[it->second.channel()].event[it->second.pitch()] = &(it->second);
++                  else if (++np > 1) {
++                        /* already playing */
++                        discard = true;
++                        /* carry over the corresponding score notes */
++                        info[it->second.channel()].event[it->second.pitch()]->notes.insert(info[it->second.channel()].event[it->second.pitch()]->notes.end(), it->second.notes.begin(), it->second.notes.end());
+                         }
++                  else
++                        info[it->second.channel()].event[it->second.pitch()] = &(it->second);
+                   info[it->second.channel()].nowPlaying[it->second.pitch()] = np;
+                   }
+ 
+-            ++it;
++            if (discard)
++                  it = erase(it);
++            else
++                  ++it;
+             }
+ 
+             free((void *)info);
+--- a/synthesizer/event.h
++++ b/synthesizer/event.h
+@@ -234,9 +234,7 @@ class PlayEvent : public MidiCoreEvent {
+ //---------------------------------------------------------
+ 
+ class NPlayEvent : public PlayEvent {
+-      const Note* _note = 0;
+       int _origin = -1;
+-      int _discard = 0;
+ 
+    public:
+       NPlayEvent() : PlayEvent() {}
+@@ -245,13 +243,10 @@ class NPlayEvent : public PlayEvent {
+       NPlayEvent(const MidiCoreEvent& e) : PlayEvent(e) {}
+       NPlayEvent(BeatType beatType);
+ 
+-      const Note* note() const       { return _note; }
+-      void setNote(const Note* v)    { _note = v; }
++      std::vector<const Note*> notes;
+ 
+       int getOriginatingStaff() const { return _origin; }
+       void setOriginatingStaff(int i) { _origin = i; }
+-      void setDiscard(int d) { _discard = d; }
+-      int discard() const { return _discard; }
+       };
+ 
+ //---------------------------------------------------------

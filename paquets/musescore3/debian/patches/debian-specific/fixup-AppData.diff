@@ -1,0 +1,20 @@
+Description: Exclude undesired AppData entries
+Author: mirabilos <tg@debian.org>
+Forwarded: not-needed
+Justification: diff between upstream Flatpak metadata and our regular AppStream one
+
+--- a/build/Linux+BSD/org.musescore.MuseScore.appdata.xml.in
++++ b/build/Linux+BSD/org.musescore.MuseScore.appdata.xml.in
+@@ -36,10 +36,12 @@
+     <p>MuseScore includes a set of sounds that reproduce common instruments (as defined by General MIDI) without taking up a lot of disk space or memory, but you can also substitute any SoundFont you prefer for a wider variety of sounds or for more realism.</p>
+     <p>MuseScore can import and export MIDI and MusicXML files, and it can also import from Capella and several other programs. MuseScore can export to PDF, PNG, and other graphic formats, to WAV and other audio formats, or to Lilypond for an alternative layout and print option.</p>
+   </description>
++<!--
+   <kudos>
+     <kudo>ModernToolkit</kudo>
+     <kudo>UserDocs</kudo>
+   </kudos>
++-->
+   <project_license>GPL-2.0</project_license>
+   <metadata_license>CC0-1.0</metadata_license>
+   <url type="homepage">https://musescore.org</url>

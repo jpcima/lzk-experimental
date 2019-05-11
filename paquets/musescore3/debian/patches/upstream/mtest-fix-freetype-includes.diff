@@ -1,0 +1,58 @@
+Description: Use system includes also for mtest
+Author: mirabilos <tg@debian.org>
+Forwarded: https://github.com/musescore/MuseScore/pull/4143
+Applied-Upstream: master, commit:5d889d7f3
+
+--- a/mtest/CMakeLists.txt
++++ b/mtest/CMakeLists.txt
+@@ -16,9 +16,14 @@ enable_testing()
+ include_directories(
+       ${PROJECT_BINARY_DIR}
+       ${PROJECT_SOURCE_DIR}
+-      ${PROJECT_SOURCE_DIR}/thirdparty/freetype/include
+       )
+ 
++if (USE_SYSTEM_FREETYPE)
++      include_directories(${FREETYPE_INCLUDE_DIRS})
++else (USE_SYSTEM_FREETYPE)
++      include_directories(${PROJECT_SOURCE_DIR}/thirdparty/freetype/include)
++endif (USE_SYSTEM_FREETYPE)
++
+ if (OMR)
+ set(OMR_SRC ${PROJECT_SOURCE_DIR}/omr/importpdf.cpp)
+ endif (OMR)
+@@ -140,9 +145,14 @@ add_executable(
+ target_link_libraries(
+       mtest
+       ${QT_LIBRARIES}
+-      mscore_freetype
+       )
+ 
++if (USE_SYSTEM_FREETYPE)
++      target_link_libraries(mtest freetype)
++else (USE_SYSTEM_FREETYPE)
++      target_link_libraries(mtest mscore_freetype)
++endif (USE_SYSTEM_FREETYPE)
++
+ set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+ 
+ string(REPLACE ";" ";-I" INC "${QT_INCLUDES}")
+--- a/mtest/cmake.inc
++++ b/mtest/cmake.inc
+@@ -39,10 +39,15 @@ endif (OMR)
+ target_link_libraries(
+       ${TARGET}
+       ${QT_LIBRARIES}
+-      mscore_freetype
+       z
+       )
+ 
++if (USE_SYSTEM_FREETYPE)
++      target_link_libraries(${TARGET} freetype)
++else (USE_SYSTEM_FREETYPE)
++      target_link_libraries(${TARGET} mscore_freetype)
++endif (USE_SYSTEM_FREETYPE)
++
+ if (NOT MINGW AND NOT APPLE)
+    target_link_libraries(${TARGET}
+       dl
