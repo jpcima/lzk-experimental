@@ -7,10 +7,10 @@
 
 ###### Init ######
 
-# chemin de la racine, déterminé à partir du Makefile. il est terminé par /
-racine = $(dir $(firstword $(MAKEFILE_LIST)))
+# chemin de la racine, déterminé à partir du Makefile
+racine = $(abspath $(dir $(firstword $(MAKEFILE_LIST)))/..)
 # vérification du chemin
-$(if $(filter $(racine)paquets/%,$(CURDIR)),,\
+$(if $(filter $(racine)/paquets/%,$(CURDIR)),,\
   $(error Ce Makefile doit être lancé depuis un dossier de paquet))
 
 
