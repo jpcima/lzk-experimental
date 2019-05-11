@@ -1,0 +1,45 @@
+1tracker (0.29-0librazik3) stretch; urgency=medium
+
+  * debian/watch :
+    - création, faisant référence à une adresse de téléchargement alternative.
+
+ -- Jean Pierre Cimalando <jp-dev@inbox.ru>  Sat, 11 May 2019 19:11:02 +0000
+
+1tracker (0.29-0librazik2) stretch; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK-2.
+    - améliorations de l'empaquetage.
+  * debian/compat :
+    - passage de 9 à 10.
+  * debian/control :
+    - passage en "non-free".
+    - mise à jour de "Maintainer" et de "Uploaders" en conformité avec
+      "debian-policy 5.6.2 and 5.6.3".
+    - dépendances de construction :
+      + debhelper : passage de 9 à 10.
+    - listes :
+      + style des listes : un élément par ligne.
+      + remise en ordre alphabétique des listes.
+    - vérification de la validité du lien "Homepage". OK.
+    - description :
+      + ajout d'une mention au projet LibraZiK.
+      + ajout d'un lien vers la page de documentation.
+      + quelques petites améliorations.
+  * debian/copyright :
+    - ajout de moi-même à la section copyright de l'empaquetage debian.
+  * debian/1tracker.desktop :
+    - création du fichier.
+  * debian/1tracker.png :
+    - création du fichier à partir du fichier .ico des sources.
+  * debian/source/include-binaries :
+    - création du fichier.
+  * debian/rules :
+    - nettoyage du fichier.
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Fri, 10 May 2019 19:37:28 +0200
+
+1tracker (0.29-0librazik1) unstable; urgency=medium
+
+  * Initial Release.
+
+ -- Jean Pierre Cimalando <jp-dev@inbox.ru>  Fri, 10 May 2019 10:11:59 +0000

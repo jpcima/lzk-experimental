@@ -1,0 +1,30 @@
+Source: 1tracker
+Section: non-free/sound
+Priority: optional
+Maintainer: Équipe LibraZiK <librazik@tuxfamily.org>
+Uploaders:
+ Olivier Humbert <trebmuh@tuxfamily.org>,
+ Jean Pierre Cimalando <jp-dev@inbox.ru>
+Build-Depends:
+ debhelper (>= 10),
+ libsdl2-dev,
+Standards-Version: 3.9.8
+Homepage: https://shiru.untergrund.net/software.shtml
+
+Package: 1tracker
+Architecture: i386
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ libasound2,
+ libgl1,
+ libpulse0,
+Description: An experimental chiptune multi-tracker
+ Supports dozens of ZX Spectrum beeper music engines, plus very basic SN76489
+ and YM2413 engines.
+ .
+ English documentation is included.
+ .
+ Documentation page : https://librazik.tuxfamily.org/doc2/paquets
+ .
+ LibraZiK audio studio package 2019 ©

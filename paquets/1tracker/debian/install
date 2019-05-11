@@ -1,0 +1,9 @@
+debian/*.png		usr/share/pixmaps/
+debian/*.desktop	usr/share/applications
+
+1tracker			usr/share/1tracker
+1tracker.cfg		usr/share/1tracker
+colors/*			usr/share/1tracker/colors
+engines/*			usr/share/1tracker/engines
+examples/*			usr/share/1tracker/examples
+fonts/*				usr/share/1tracker/fonts

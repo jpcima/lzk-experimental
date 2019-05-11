@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	dh_auto_clean || true
+	rm -f 1tracker
+
+override_dh_auto_install:
+	dh_auto_install
+	install -d debian/1tracker/usr/bin/
+	ln -sf ../share/1tracker/1tracker debian/1tracker/usr/bin/1tracker
