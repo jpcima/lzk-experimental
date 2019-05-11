@@ -1,0 +1,227 @@
+setbfree (0.8.8-0librazik1) stretch; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK-2.
+    - nouvelle version amont.
+  * debian/docs :
+    - installation de b_overdrive/README .
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Mon, 13 Aug 2018 13:46:48 +0200
+
+setbfree (0.8.7-0librazik3) stretch; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK-2.
+    - correction pour l'effet LV2 chorato. Voir
+      https://github.com/pantherb/setBfree/issues/62 .
+  * debian/rules :
+    - suppression de "ENABLE_CONVOLUTION=yes" dans les écrasements
+      dh_auto_build et dh_auto_install.
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Sat, 11 Aug 2018 11:18:46 +0200
+
+setbfree (0.8.7-0librazik2) stretch; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK-2.
+    - installation des LV2 supplémentaires.
+  * debian/rules :
+    - installation des LV2 supplémentaires.
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Fri, 10 Aug 2018 12:59:54 +0200
+
+setbfree (0.8.7-0librazik1) stretch; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK-2.
+    - nouvelle version amont.
+  * debian/control :
+    - description : 2017 -> 2018.
+  * debian/copyright :
+    - Olivier Humbert : 2017 -> 2018.
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Thu, 09 Aug 2018 15:55:27 +0200
+
+setbfree (0.8.5+20171123~gitc2393b3-0librazik1) stretch; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK-2.
+    - nouvelle version amont.
+    - à partir du git du jour.
+    - fusion avec le paquet LZK précédent.
+  * debian/setbfree.desktop :
+    - mise à jour et fusion avec l'amont.
+  * debian/x42-whirl.desktop :
+    - ajout du fichier amont.
+  * debian/setbfree.manpage -> debian/manpage :
+    - renommage pour fusionner avec le fichier amont.
+  * debian/setbfree.docs -> debian/docs :
+    - renommage pour fusionner avec le fichier amont.
+  * debian/copyright :
+    - Robin Gareus : 2012-2013 -> 2012-2017.
+    - mise à jour pour fusion avec le fichier amont.
+  * debian/setbfree.install -> debian/install :
+    - renommage pour cohérence.
+    - mise à jour.
+  * debian/rules :
+    - mise à jour et fusion.
+  * debian/control :
+    - dépendance de construction pour fusionner avec l'amont :
+      + passage de "libcairo2-dev" à "libcairo2-dev (>=1.12.10~)".
+      + passage de "libglu1-mesa-dev" à "libglu1-mesa-dev | libglu-dev".
+      + passage de "libpango1.0-dev" à "libpango1.0-dev (>=1.32.5~)".
+      + ajout de "libpixman-1-dev (>=0.30.2~)".
+    - dépendance d'exécution :
+      + ajout de "x11-utils" pour fusionner avec l'amont.
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Thu, 23 Nov 2017 19:48:59 +0100
+
+setbfree (0.8.4+20170623~git559b66b-0librazik1) stretch; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK-2.
+  * debian/compat :
+    - passage de 9 à 10.
+  * debian/control :
+    - dépendance de construction :
+      + debhelper : passage de 9 à 10.
+    - description : adaptation à LZK-2.
+  * debian/rules :
+    - suppression du "--parallel".
+  * debian/setbfree.desktop :
+    - correction d'une minuscule/majuscule.
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Sat, 24 Jun 2017 11:31:32 +0200
+
+setbfree (0.8.4-1librazik1) jessie; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK.
+    - nouvelle version amont.
+    - fusion avec debian stretch/testing.
+  * debian/compat :
+    - passage de 10 à 9.
+  * debian/control :
+    - vérification de la validité du lien "Homepage". OK.
+    - ajout d'une mention au projet LibraZiK dans "Description".
+    - ajout d'un lien vers la page de documentation "Description".
+    - description : 2016 -> 2017.
+    - remise en ordre alphabétique de la liste "Depends".
+    - mise à jour de "Maintainer" et de "Uploaders" en conformité avec
+      "debian-policy 5.6.2 and 5.6.3".
+    - dépendance de construction :
+      + passage de "debhelper (>= 10)" à "debhelper (>= 9)".
+  * debian/copyright :
+    - ajout de moi-même à la section copyright de l'empaquetage debian.
+    - 2016 -> 2016-2017.
+  * debian/rules :
+    - (ré-)activation de la construction en parallèle.
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Fri, 06 Jan 2017 14:53:21 +0100
+
+setbfree (0.8.4-1) unstable; urgency=medium
+
+  * New upstream version 0.8.4
+
+ -- Jaromír Mikeš <mira.mikes@seznam.cz>  Wed, 04 Jan 2017 22:44:40 +0100
+
+setbfree (0.8.3-1) unstable; urgency=medium
+
+  * New upstream version 0.8.3
+  * Patches applied upstream.
+
+ -- Jaromír Mikeš <mira.mikes@seznam.cz>  Fri, 30 Dec 2016 20:00:12 +0100
+
+setbfree (0.8.2-2) unstable; urgency=medium
+
+  * Set dh/compat 10.
+  * Update copyright file.
+  * Sign tags.
+  * Avoid useless linking.
+  * Add spelling patch.
+
+ -- Jaromír Mikeš <mira.mikes@seznam.cz>  Mon, 26 Dec 2016 20:09:33 +0100
+
+setbfree (0.8.2-1) unstable; urgency=medium
+
+  * Fix VCS fields.
+  * Add french translation to desktop file. (Closes: #827406)
+  * Imported Upstream version 0.8.2
+  * Patches refreshed/removed.
+  * Fix some hardening.
+
+ -- Jaromír Mikeš <mira.mikes@seznam.cz>  Mon, 20 Jun 2016 19:49:32 +0200
+
+setbfree (0.8.1-1librazik1) jessie; urgency=medium
+
+  * Reconstruction avec pbuilder pour LibraZiK.
+  * debian/setbfree.desktop :
+    - ajout de la traduction FR.
+  * debian/copyright :
+    - ajout de moi-même à la section copyright de l'empaquetage debian.
+  * debian/control :
+    - vérification de la validité du lien "Homepage". OK.
+    - ajout d'une mention au projet LibraZiK dans "Description".
+    - ajout d'un lien vers la page de documentation "Description".
+    - remise en ordre alphabétique de la liste "Depends".
+    - mise à jour de "Maintainer" et de "Uploaders" en conformité avec
+      "debian-policy 5.6.2 and 5.6.3".
+
+ -- Olivier Humbert <trebmuh@tuxfamily.org>  Wed, 15 Jun 2016 19:27:41 +0200
+
+setbfree (0.8.1-1) unstable; urgency=medium
+
+  * Imported Upstream version 0.8.1
+  * Patch refreshed.
+  * Remove patch applied upstream.
+  * Bump Standards.
+  * Fix VCS fields.
+  * Fix some hardening.
+  * Set optimizations -03.
+  * Add spelling.patch.
+
+ -- Jaromír Mikeš <mira.mikes@seznam.cz>  Tue, 14 Jun 2016 23:13:31 +0200
+
+setbfree (0.8.0-1) unstable; urgency=medium
+
+  * Patches refreshed.
+  * Bump Standards.
+  * Enable parallel build.
+  * Update copyright file.
+  * Drop not needed build deps.
+  * Fix desktop file entry.
+  * Not install upstream changelog twice.
+  * Add Keywords to desktop file.
+  * Fix one more spelling mistake.
+  * Patches forwarded.
+  * Add local-option file.
+  * Add dependency to build GUI.
+  * Start GUI by desktop file.
+  * Pass LDFLAGS after CFLAGS .
+  * Add dependency to build whirl GUI.
+
+ -- Jaromír Mikeš <mira.mikes@seznam.cz>  Tue, 22 Sep 2015 07:28:29 +0200
+
+setbfree (0.7.5-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update watch file.
+    Thanks to Bart Martens <bartm@debian.org>
+  * Refresh patches.
+
+ -- Alessio Treglia <alessio@debian.org>  Fri, 04 Oct 2013 09:45:21 +0100
+
+setbfree (0.6.2-1) unstable; urgency=low
+
+  * New upstream release.
+  * Refresh patches.
+  * debian/control:
+    - Build-Depends on
+      + ibftgl-dev
+      + libglu1-mesa-dev
+      + libx11-dev
+    - Depends on ttf-bitstream-vera.
+    - Fix Homepage field.
+    - Bump Standards.
+  * Update debian/copyright.
+
+ -- Alessio Treglia <alessio@debian.org>  Sat, 13 Apr 2013 00:52:34 +0200
+
+setbfree (0.5.5-1) unstable; urgency=low
+
+  * Initial release. (Closes: #682831)
+
+ -- Robin Gareus <robin@gareus.org>  Wed, 18 Jul 2012 13:22:26 +0200

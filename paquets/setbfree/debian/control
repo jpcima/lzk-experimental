@@ -1,0 +1,48 @@
+Source: setbfree
+Section: sound
+Priority: optional
+Maintainer: Équipe LibraZiK <librazik@tuxfamily.org>
+Uploaders:
+ Olivier Humbert <trebmuh@tuxfamily.org>,
+ Debian Multimedia Maintainers <pkg-multimedia-maintainers@lists.alioth.debian.org>,
+ Alessio Treglia <alessio@debian.org>,
+ Robin Gareus <robin@gareus.org>,
+ Jaromír Mikeš <mira.mikes@seznam.cz>
+Build-Depends:
+ debhelper (>= 10),
+ libasound2-dev,
+ libcairo2-dev (>=1.12.10~),
+ libftgl-dev,
+ libglu1-mesa-dev | libglu-dev,
+ libjack-dev | libjack-jackd2-dev,
+ liblo-dev,
+ libpango1.0-dev (>=1.32.5~),
+ libpixman-1-dev (>=0.30.2~),
+ libsndfile1-dev,
+ libx11-dev,
+ libzita-convolver-dev (>=3.1.0),
+ lv2-dev (>=1.0.0~dfsg2-2),
+ ttf-bitstream-vera,
+Standards-Version: 3.9.8
+Homepage: http://setbfree.org
+Vcs-Git: https://anonscm.debian.org/git/pkg-multimedia/setbfree.git
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-multimedia/setbfree.git
+
+Package: setbfree
+Architecture: any
+Depends:
+ ttf-bitstream-vera,
+ x11-utils,
+ ${misc:Depends},
+ ${shlibs:Depends}
+Provides:
+ lv2-plugin
+Description: DSP tonewheel organ
+ setBfree is a MIDI-controlled, software synthesizer designed to imitate
+ the sound and properties of the electromechanical organs and sound
+ modification devices that brought world-wide fame to the names and
+ products of Laurens Hammond and Don Leslie.
+ .
+ Documentation page : http://librazik.tuxfamily.org/doc2/paquets
+ .
+ LibraZiK audio studio package 2018 ©
