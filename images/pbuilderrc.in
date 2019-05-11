@@ -1,0 +1,4 @@
+BASETGZ=/var/cache/pbuilder/base.tgz
+DISTRIBUTION=@distribution@
+ARCHITECTURE=@architecture@
+OTHERMIRROR="deb [trusted=yes] http://download.tuxfamily.org/librazik/decepas LZK-DCP-users main contrib"
