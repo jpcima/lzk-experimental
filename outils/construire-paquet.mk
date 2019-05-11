@@ -13,6 +13,17 @@ racine = $(abspath $(dir $(firstword $(MAKEFILE_LIST)))/..)
 $(if $(filter $(racine)/paquets/%,$(CURDIR)),,\
   $(error Ce Makefile doit être lancé depuis un dossier de paquet))
 
+# déterminer l'architecture cible : configuration pbuilder, ou sinon dpkg
+architecture = $(shell eval "`pbuilder dumpconfig | egrep '^ARCHITECTURE='`" && echo "$$ARCHITECTURE")
+architecture ?= $(shell dpkg --print-architecture)
+$(if $(architecture),,$(error Impossible de déterminer l\'architecture cible))
+
+# déterminer les architectures du paquet
+package_architectures = $(strip $(shell sed -r -n 's/^\s*Architecture\s*:(.*)/\1/p' debian/control))
+$(if $(package_architectures),,$(error Impossible de déterminer les architectures du paquet))
+
+# déterminer si l'architecture est constructible dans cette configuration
+package_compatible = $(filter all any $(architecture),$(package_architectures))
 
 
 ###### Règles ######
@@ -25,7 +36,7 @@ all: package
 
 # empaquetage avec pbuilder
 package: unpack
-	pdebuild
+	$(if $(package_compatible),pdebuild,echo "On ignore l'architecture incompatible : $(architecture).")
 
 # extraction de l'archive source
 unpack: get-orig-source
